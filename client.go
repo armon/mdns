@@ -31,7 +31,7 @@ type ServiceEntry struct {
 
 // complete is used to check if we have all the info we need
 func (s *ServiceEntry) complete() bool {
-	return (s.AddrV4 != nil || s.AddrV6 != nil || s.Addr != nil) && s.Port != 0 && s.hasTXT
+	return (s.AddrV4 != nil || s.AddrV6 != nil || s.Addr != nil)
 }
 
 // QueryParam is used to customize how a Lookup is performed
@@ -42,6 +42,7 @@ type QueryParam struct {
 	Interface           *net.Interface       // Multicast interface to use
 	Entries             chan<- *ServiceEntry // Entries Channel
 	WantUnicastResponse bool                 // Unicast response desired, as per 5.4 in RFC
+	RequestType         uint16               // DNS Query type
 }
 
 // DefaultParams is used to return a default set of QueryParam's
@@ -52,6 +53,7 @@ func DefaultParams(service string) *QueryParam {
 		Timeout:             time.Second,
 		Entries:             make(chan *ServiceEntry),
 		WantUnicastResponse: false, // TODO(reddaly): Change this default.
+		RequestType:         dns.TypeA,
 	}
 }
 
@@ -209,7 +211,7 @@ func (c *client) query(params *QueryParam) error {
 
 	// Send the query
 	m := new(dns.Msg)
-	m.SetQuestion(serviceAddr, dns.TypePTR)
+	m.SetQuestion(serviceAddr, params.RequestType)
 	// RFC 6762, section 18.12.  Repurposing of Top Bit of qclass in Question
 	// Section
 	//
